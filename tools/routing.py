@@ -26,6 +26,7 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
+import select
 import datetime
 import subprocess
 import utils
@@ -44,6 +45,14 @@ send_to_direct = 0
 send_to_group = 1
 send_to_closest = 2
 
+
+def heardEnter():
+    i,o,e = select.select([sys.stdin],[],[],0.0001)
+    for s in i:
+        if s == sys.stdin:
+            input = sys.stdin.readline()
+            return True
+    return False
 
 def SetupKeys(num):
   print("\tSetting up keys ... ")
@@ -339,10 +348,10 @@ def MsgSendingMenu():
     print ("================================")
     print ("1: Sending a Direct Msg to Random")
     print ("2: Sending a Direct Msg to Target")
-    print ("3: Sending Direct Msg to Random Target infinitely (type x to stop)")
+    print ("3: Sending Direct Msg to Random Target infinitely")
     print ("4: Sending a Group Msg to Random Group")
     print ("5: Sending a Group Msg to Target Group")
-    print ("6: Sending Group Msg to Random Group infinitely (type x to stop)")
+    print ("6: Sending Group Msg to Random Group infinitely")
     print ("7: Checking Routing Table Size")
 
     option = raw_input("Please select an option (m for main QA menu): ").lower()
@@ -356,7 +365,8 @@ def MsgSendingMenu():
       dest = int(number)
       SendDirectMsg(p_nodes, -1, source, dest, 1048576)
     if (option == "3"):
-      while(option != 'x'):
+      print("****** hit enter to stop ******")
+      while(not heardEnter()):
         source = random.randint(0, num_of_nodes - 1)
         SendDirectMsg(p_nodes, -1, source, -1, 1048576)
     if (option == "4"):
@@ -369,7 +379,8 @@ def MsgSendingMenu():
       dest = int(number)
       SendGroup(p_nodes, -1, source, dest)
     if (option == "6"):
-      while(option != 'x'):
+      print("****** hit enter to stop ******")
+      while(not heardEnter()):
         source = random.randint(0, num_of_nodes - 1)
         SendGroup(p_nodes, -1, source, -1)
     if (option == "7"):
