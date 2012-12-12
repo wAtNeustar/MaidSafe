@@ -33,10 +33,16 @@ import random
 from subprocess import Popen, PIPE, STDOUT
 from time import sleep
 
+from routing_python_api import *
+
 num_of_nodes = 20
 num_of_bootstraps = 2
 num_of_vaults = num_of_nodes / 2 - num_of_bootstraps
 num_of_clients = num_of_nodes - num_of_vaults - num_of_bootstraps
+
+send_to_direct = 0
+send_to_group = 1
+send_to_closest = 2
 
 
 def SetupKeys(num):
@@ -44,68 +50,35 @@ def SetupKeys(num):
   return subprocess.call(['./routing_key_helper', '-c', '-p', '-n', str(num)], stdout=PIPE)
 
 
-def SearchKeyWordLine(process, keyword, timeout):
-  t_start = datetime.datetime.now()
-  next_line = process.stdout.readline()
-  while next_line.find(keyword) == -1:
-    next_line = process.stdout.readline()
-    # print 'process\t' + next_line.rstrip()
-    time_delta = datetime.datetime.now() - t_start
-    if time_delta >= datetime.timedelta(seconds=timeout):
-      return -1
-  return next_line
-
-
-def ExtractNodeEndpoint(p_b):
-  peer_line = SearchKeyWordLine(p_b, 'Current BootStrap node endpoint info', 3)
-  if peer_line == -1:
-    return -1
-  peer = peer_line.split()[7]
-  return peer
-
-
-def ParseSecondsFromString(duration):
-  times = duration.split(':')
-  hour = float(times[0])
-  minute = float(times[1])
-  second = float(times[2])
-  return hour * 3600 + minute * 60 + second
-
-
 def SetupBootstraps():
-  p_b0 = Popen('./routing_node -s -b -i 0', shell = True, stdout=PIPE, stdin=PIPE)
-  p_b1 = Popen('./routing_node -s -b -i 1', shell = True, stdout=PIPE, stdin=PIPE)
-
-  peer_0 = ExtractNodeEndpoint(p_b0)
-  if peer_0 == -1:
-    KillBootstraps(p_b0, p_b1)
-    return -1
-
-  peer_1 = ExtractNodeEndpoint(p_b1)
-  if peer_1 == -1:
-    KillBootstraps(p_b0, p_b1)
-    return -1
-  sleep(1)
-
-  p_b0.stdin.write('peer ' + peer_1 + '\n')
-  p_b1.stdin.write('peer ' + peer_0 + '\n')
-
-  p_b0.stdin.write('zerostatejoin\n')
-  p_b1.stdin.write('zerostatejoin\n')
-  sleep(1)
   print("\tSetup boostrap nodes ...")
+  p_b0 = RoutingNode("", False, 0)
+  p_b1 = RoutingNode("", False, 1)
+  peer_0 = p_b0.GetNodeInfo()
+  if peer_0 == -1:
+    return -1
+  peer_1 = p_b1.GetNodeInfo()
+  if peer_1 == -1:
+    return -1
+  p_b0.SetPeer(peer_1)
+  p_b1.SetPeer(peer_0)
+  p_b0.ZeroStateJoin()
+  p_b1.ZeroStateJoin()
+  sleep(2)
   return [peer_0, p_b0, p_b1]
 
 
 def AddRoutingObject(peer, idx):
   if idx < (num_of_nodes / 2):
-    p_v = Popen('./routing_node -s -i ' + str(idx) + ' -p ' + peer, shell = True, stdout=PIPE, stdin=PIPE)
+    p_v = RoutingNode("", False, idx)
   if idx >= (num_of_nodes / 2):
-    p_v = Popen('./routing_node -s -c -i ' + str(idx) + ' -p ' + peer, shell = True, stdout=PIPE, stdin=PIPE)
-
-  key_line = SearchKeyWordLine(p_v, 'Current Node joined', 3)
-  if key_line == -1:
-    return -1;
+    p_v = RoutingNode("", True, idx)
+  p_v.SetPeer(peer)
+  p_v.Join()
+  if p_v == -1:
+    print 'Failed to add routing object ' + str(i) + ' !'
+    return -1
+  sleep(1)
   return p_v
 
 
@@ -115,9 +88,11 @@ def SetupRoutingNodes(peer, num_vaults, num_clients):
   i = 0;
   while i < (num_vaults + num_clients):
     if i < num_vaults:
-      p_nodes[i] = AddRoutingObject(peer, i + num_of_bootstraps)
+      p_nodes[i] = RoutingNode("", False, i + num_of_bootstraps)
     if i >= num_vaults:
-      p_nodes[i] = AddRoutingObject(peer, (num_of_bootstraps + num_of_vaults) + (i - num_vaults))
+      p_nodes[i] = RoutingNode("", True, (num_of_bootstraps + num_of_vaults) + (i - num_vaults))
+    p_nodes[i].SetPeer(peer)
+    p_nodes[i].Join()
     if p_nodes[i] == -1:
       print 'Failed to add routing object ' + str(i + num_of_bootstraps) + ' !'
       #TODO cleanup the previous opened nodes
@@ -127,57 +102,17 @@ def SetupRoutingNodes(peer, num_vaults, num_clients):
   return p_nodes
 
 
-def StopNodes(p_nodes):
-  for p_node in p_nodes:
-    p_node.stdin.write('exit' + '\n')
-  sleep(1)
-  if p_node.poll() == None:
-    print "Failed to stop a node!"
-  return 0    
-
-
-def CheckClientNodeIsNotInRoutingTable(p_c):
+def CheckNodeIsNotInRoutingTable(p_nodes, idx):
   for index in range(num_of_nodes / 2):
-    p_c.stdin.write('rrt ' + str(index) + '\n')
-    sleep(1)
-    p_c.stdin.write('\n')
-    p_c.stdin.write('\n')
-    next_line = SearchKeyWordLine(p_c, 'Sending a msg from ', 2)
-    node_id = ((next_line.split(':')[1]).split(' ')[1])
-    # print 'checking routing , node_id : ' + node_id
-    next_line = p_c.stdout.readline()
-    while next_line.find('Enter command >') == -1:
-      # print 'checking routing in ' + str(index) + '\t' + next_line.rstrip()
-      next_line = p_c.stdout.readline()
-      if next_line.find(node_id) != -1:
-        return -1
+    if(p_nodes[index].ExistInRoutingTable(idx)):
+      return -1
   return 0
 
 
 def CheckRoutingTableSize(p_nodes):
-  p_c = p_nodes[0]
   find_unexpected = False
   for index in range(num_of_bootstraps + num_of_vaults):
-    routing_table_size = 0
-    start_counting = False
-    p_c.stdin.write('rrt ' + str(index) + '\n')
-    sleep(1)
-    p_c.stdin.write('\n')
-    p_c.stdin.write('\n')
-    next_line = SearchKeyWordLine(p_c, 'Sending a msg from ', 2)
-    node_id = ((next_line.split(':')[1]).split(' ')[1])
-    # print 'checking routing , node_id : ' + node_id
-    next_line = p_c.stdout.readline()
-    while next_line.find('Enter command >') == -1:
-#      print '\tchecking routing in ' + str(index) + '\t' + next_line.rstrip()
-      if start_counting:
-        routing_table_size = routing_table_size + 1
-      if next_line.find('Received routing table from peer is :') != -1:
-        start_counting = True
-      next_line = p_c.stdout.readline()
-    if (routing_table_size > 2):
-      routing_table_size = routing_table_size -2
-#    print(str(routing_table_size))
+    routing_table_size = p_nodes[index].RoutingTableSize()
     if (routing_table_size < (num_of_bootstraps + num_of_vaults - 1)):
       find_unexpected = True
       print("\trouting table in node " + str(index) + " is incorrect ; expected : " + str(num_of_bootstraps + num_of_vaults - 1) + " , having : " + str(routing_table_size))
@@ -186,27 +121,18 @@ def CheckRoutingTableSize(p_nodes):
   return 0
 
 
-
 def SendGroup(p_nodes, p, source, target):
   if source == -1:
     source = random.randint(0, num_of_nodes / 2 - 1)
   if p_nodes != -1:
     p = p_nodes[source]
   print("\tSending a 1024 bytes msg from " + str(source) + " to group index " + str(target) + ", please wait ...")
-
-  p.stdin.write('datasize ' + str(1024) + '\n')
-  if target != -1:
-    p.stdin.write('sendgroup ' + str(target) + '\n')
+  result = p.SendAMessage(target, send_to_group, 1024)
+  if result:
+    print("\t Message sent sucessfully")
   else:
-    p.stdin.write('sendgroup' + '\n')
-  sleep(1)
-  p.stdin.write('\n')
-  p.stdin.write('\n')
-  # TODO: detailed check if respondents are really expected
-  if SearchKeyWordLine(p, 'Received response', 5) == -1:
-    return -1
-  print "\tGroupt msg sent successfully"
-  return 0
+    print("\t Message sending failed")
+  return result
 
 
 def SendDirectMsg(p_nodes, p_n, source, dst, datasize):
@@ -219,16 +145,12 @@ def SendDirectMsg(p_nodes, p_n, source, dst, datasize):
   if p_nodes != -1:
     p_n = p_nodes[source]
   print("\tSending a " + str(datasize) + " bytes msg from " + str(source) + " to " + str(dst) + ", please wait ...")
-
-  p_n.stdin.write('datasize ' + str(datasize) + '\n')
-  p_n.stdin.write('senddirect ' + str(dst) + '\n')
-  key_line = SearchKeyWordLine(p_n, 'Response received in', 10)
-  if key_line == -1:
-    print("\tFailed in sending a msg to " + str(dst))
-    return -1;
-  duration = key_line.split()[3]
-  print("\t"+ str(datasize) + " Bytes data exchanged in " + duration + " seconds")
-  return ParseSecondsFromString(duration)
+  result = p_n.SendAMessage(dst, send_to_direct, datasize)
+  if result:
+    print("\t Message sent sucessfully")
+  else:
+    print("\t Message sending failed")
+  return result
 
 
 def JAV1(peer):
@@ -236,11 +158,6 @@ def JAV1(peer):
   p_v = AddRoutingObject(peer, 2)
   if p_v == -1:
     print 'Failed to add routing object!'
-    return -1
-  p_v.stdin.write('exit' + '\n')
-  sleep(2)
-  if p_v.poll() == None:
-    print "Failed to stop node 2!"
     return -1
   return 0
 
@@ -252,15 +169,8 @@ def JAV2(peer):
     print 'Failed to add routing object!'
     return -1
   result = 0
-  if SendDirectMsg(-1, p_v, 8, 1, 1024) == -1:
+  if not SendDirectMsg(-1, p_v, 8, 1, 1024):
     result = -1
-
-  p_v.stdin.write('exit' + '\n')
-  sleep(2)
-  if p_v.poll() == None:
-    print "Failed to stop node 2!"
-    return -1
-
   return result
 
 
@@ -268,28 +178,20 @@ def P1(p_nodes):
   if p_nodes == -1:
     return -1;
  # print("Running Routing Sanity Check P1 Test, please wait ....")
-  duration = 0
   num_iteration = 5
   for i in range(num_iteration): # vault to vault
-    result = SendDirectMsg(p_nodes, -1, -1, -1, 1048576)
-    if result == -1:
+    if not SendDirectMsg(p_nodes, -1, -1, -1, 1048576):
       return -1
-    duration = duration + result
-    i = i - 1
-  print('\tAverage transmission time of 1 MB data from vault to vault is : ' + str(duration / num_iteration))
-
-  duration = 0
+#  print('\tAverage transmission time of 1 MB data from vault to vault is : ' + str(duration / num_iteration))
   for i in range(num_iteration): # client to vault
     source = random.randint(num_of_nodes / 2, num_of_nodes - 1)
-    result = SendDirectMsg(p_nodes, -1, source, -1, 1048576)
-    if result == -1:
+    if not SendDirectMsg(p_nodes, -1, source, -1, 1048576):
       return -1
-    duration = duration + result
-  print('\tAverage transmission time of 1 MB data from client to vault is : ' + str(duration / num_iteration))
+#  print('\tAverage transmission time of 1 MB data from client to vault is : ' + str(duration / num_iteration))
   return 0
 
 
-def JAC1(peer):
+def JAC1(peer, p_nodes):
 #  print("Running Routing Sanity Check JAC1 Test, please wait ....")
   client_index = num_of_nodes / 2 + 2
   p_c = AddRoutingObject(peer, client_index)
@@ -297,20 +199,15 @@ def JAC1(peer):
   if p_c == -1:
     print 'Failed to add routing object!'
     return -1
-  if SendDirectMsg(-1, p_c, client_index, client_index, 1024) != -1:
+  if SendDirectMsg(-1, p_c, client_index, client_index, 1024):
     print 'Client shall not be able to send to itself'
     result = -1
 
-  if SendDirectMsg(-1, p_c, client_index, 5, 1024) == -1:
+  if not SendDirectMsg(-1, p_c, client_index, 5, 1024):
     print 'Client failed to send to vault 5'
     result = -1
-  if CheckClientNodeIsNotInRoutingTable(p_c) == -1:
+  if not CheckNodeIsNotInRoutingTable(p_nodes, client_index):
     result = -1
-  p_c.stdin.write('exit' + '\n')
-  sleep(2)
-  if p_c.poll() == None:
-    print ("Failed to stop node " + str(client_index) + " !")
-    return -1
   return result
 
 
@@ -318,10 +215,8 @@ def JAC2(peer, p_nodes):
 #  print("Running Routing Sanity Check JAC2 Test, please wait ....")
   v_drop = 3
   # drop the vault first
-  p_nodes[v_drop].stdin.write('exit' + '\n')
+  p_nodes[v_drop] = -1
   sleep(1)
-  if p_nodes[v_drop].poll() == None:
-    print "Failed to stop a node!"
   # join the node back
   p_nodes[v_drop] = AddRoutingObject(peer, v_drop)
   if p_nodes[v_drop] == -1:
@@ -330,8 +225,8 @@ def JAC2(peer, p_nodes):
   # check routing table
   result = 0
   for i in range(num_of_nodes / 2, num_of_nodes):
- #   print '----------------- :' + str(i)
-    if CheckClientNodeIsNotInRoutingTable(p_nodes[i]) == -1:
+#   print '----------------- :' + str(i)
+    if CheckNodeIsNotInRoutingTable(p_nodes, i) == -1:
       result = -1
   return result
 
@@ -340,10 +235,10 @@ def  SGM1(p_nodes):
   num_iteration = 5
   for i in range(num_iteration):
     rnd = random.randint(0, num_of_nodes / 2 - 1)
-    if SendGroup(p_nodes, -1, rnd, -1) != 0:
+    if not SendGroup(p_nodes, -1, rnd, -1):
       return -1
     target = random.randint(0, num_of_nodes - 1)
-    if SendGroup(p_nodes, -1, rnd, target) != 0:
+    if not SendGroup(p_nodes, -1, rnd, target):
       return -1
   return 0
 
@@ -376,7 +271,7 @@ def SanityCheck():
     print 'Join a vault and send message  : FAILED\n'
 
   p_vaults = SetupRoutingNodes(peer, num_of_vaults, 0)
-  if JAC1(peer) == 0:
+  if JAC1(peer, p_bs + p_vaults) == 0:
     print 'Join a client and send a message : PASSED\n'
   else:
     print 'Join a client and send a message  : FAILED\n'
@@ -399,8 +294,8 @@ def SanityCheck():
   else:
     print 'Check no client in routing tables : FAILED\n'
 
-  StopNodes(p_nodes)
   utils.ClearScreen()
+
 
 def GetAnInputNum(default, msg):
   num = default
@@ -482,11 +377,8 @@ def MsgSendingMenu():
         print 'Routing table size check  : FAILED\n'
       else:
         print 'Routing table size check  : PASSED\n'
-
-  StopNodes(p_nodes)
   utils.ClearScreen()
 
-  
 
 def RoutingMenu():
   option = 'a'
@@ -499,13 +391,13 @@ def RoutingMenu():
     print ("MaidSafe Quality Assurance Suite | routing Actions")
     print ("================================")
     print ("1: Routing Sanity Checks (10 minutes average)")
-    if procs == 0:
-      print ("2: Connect nodes to remote network")
-    else:
-      print ("3: Feature Checks")
-      print ("4: Kill all routing nodes on this machine")
-      print ("5: Random churn on this machine, rate (% churn per minute) (not yet implemented)")
-      print ("6: Msg Send Menu")
+#    if procs == 0:
+#      print ("2: Connect nodes to remote network")
+#    else:
+    print ("3: Feature Checks")
+    print ("4: Kill all routing nodes on this machine")
+    print ("5: Random churn on this machine, rate (% churn per minute) (not yet implemented)")
+    print ("6: Msg Send Menu")
     option = raw_input("Please select an option (m for main QA menu): ").lower()
     if (option == "1"):
       SanityCheck()
