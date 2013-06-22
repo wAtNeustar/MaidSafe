@@ -618,8 +618,8 @@ def _SetFilters(filters):
 class _FunctionState(object):
   """Tracks current function name and the number of lines in its body."""
 
-  _NORMAL_TRIGGER = 250  # for --v=0, 500 for --v=1, etc.
-  _TEST_TRIGGER = 400    # about 50% more than _NORMAL_TRIGGER.
+  _NORMAL_TRIGGER = 20   # for --v=0, 40 for --v=1, etc.
+  _TEST_TRIGGER = 200
 
   def __init__(self):
     self.in_a_function = False
