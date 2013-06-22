@@ -63,7 +63,7 @@ add_subdirectory("${gtest_dir}" "${gmock_BINARY_DIR}/gtest")
 # call it again here.
 config_compiler_and_linker()  # from ${gtest_dir}/cmake/internal_utils.cmake
 
-# if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+# if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 #   add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
 #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -ldl -lcxxrt")
 # endif()
@@ -85,8 +85,15 @@ include_directories("${gmock_SOURCE_DIR}/include"
 # are used for other targets, to ensure that Google Mock can be compiled by
 # a user aggressive about warnings.
 cxx_library(gmock "${cxx_strict}" src/gmock-all.cc)
+add_dependencies(gmock boost)
+add_dependencies(gtest boost)
 target_link_libraries(gmock gtest)
-set_target_properties(gmock PROPERTIES FOLDER "Third Party/GoogleMock")
+if(MSVC)
+  set_target_properties(gmock PROPERTIES
+                        STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
+                        STATIC_LIBRARY_FLAGS_RELWITHDEBINFO "/LTCG"
+                        FOLDER "Third Party/GoogleMock")
+endif()
 
 # cxx_library(gmock_main "${cxx_strict}" src/gmock_main.cc)
 # target_link_libraries(gmock_main gmock)

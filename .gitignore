@@ -29,6 +29,9 @@
 *.tar
 *.zip
 *.pyc
+src/sandbox
+src/lifestuff_ui_qt
+
 # Logs and databases #
 ######################
 *.log

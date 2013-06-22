@@ -1,22 +1,24 @@
-#==============================================================================#
-#                                                                              #
-#  Copyright (c) 2012 MaidSafe.net limited                                     #
-#                                                                              #
-#  The following source code is property of MaidSafe.net limited and is not    #
-#  meant for external use.  The use of this code is governed by the license    #
-#  file licence.txt found in the root directory of this project and also on    #
-#  www.maidsafe.net.                                                           #
-#                                                                              #
-#  You are not free to copy, amend or otherwise use this source code without   #
-#  the explicit written permission of the board of directors of MaidSafe.net.  #
-#                                                                              #
-#  Script Purpose: Run CI on All Submodules of MaidSafe/MaidSafe               #
-#==============================================================================#
+#==================================================================================================#
+#                                                                                                  #
+#  Copyright (c) 2012 MaidSafe.net limited                                                         #
+#                                                                                                  #
+#  The following source code is property of MaidSafe.net limited and is not meant for external     #
+#  use.  The use of this code is governed by the license file licence.txt found in the root        #
+#  directory of this project and also on www.maidsafe.net.                                         #
+#                                                                                                  #
+#  You are not free to copy, amend or otherwise use this source code without the explicit written  #
+#  permission of the board of directors of MaidSafe.net.                                           #
+#                                                                                                  #
+#==================================================================================================#
+#                                                                                                  #
+#  Module used to run CI on all submodules of MaidSafe/MaidSafe                                    #
+#                                                                                                  #
+#  Example usage: ctest -S CI_Continuous_Release.cmake                                             #
+#                                                                                                  #
+#==================================================================================================#
 
-################################################################################
-# Example usage: ctest -S CI_Continuous_Release.cmake                          #
-################################################################################
-set(ScriptVersion 6)
+
+set(ScriptVersion 7)
 include(${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake)
 include(${CTEST_SOURCE_DIRECTORY}/cmake_modules/ci_utils.cmake)
 
@@ -50,16 +52,13 @@ endif()
 message("================================================================================")
 
 
-################################################################################
-# Set sub-projects' source and binary directories                              #
-################################################################################
+#==================================================================================================#
+# Set sub-projects' source and binary directories                                                  #
+#==================================================================================================#
 foreach(SubProject ${CTEST_PROJECT_SUBPROJECTS})
-  if(${SubProject} STREQUAL "Vault")
-    set(${SubProject}SourceDirectory ${CTEST_SOURCE_DIRECTORY}/src/pd)
-    set(${SubProject}BinaryDirectory ${CMAKE_CURRENT_BINARY_DIR}/src/pd)
-  elseif(${SubProject} STREQUAL "LifestuffGui")
-    set(${SubProject}SourceDirectory ${CTEST_SOURCE_DIRECTORY}/src/lifestuff-gui)
-    set(${SubProject}BinaryDirectory ${CMAKE_CURRENT_BINARY_DIR}/src/lifestuff-gui)
+  if(${SubProject} STREQUAL "LifestuffUiQt")
+    set(${SubProject}SourceDirectory ${CTEST_SOURCE_DIRECTORY}/src/lifestuff_ui_qt)
+    set(${SubProject}BinaryDirectory ${CMAKE_CURRENT_BINARY_DIR}/src/lifestuff_ui_qt)
   else()
     string(TOLOWER ${SubProject} subproject)
     set(${SubProject}SourceDirectory ${CTEST_SOURCE_DIRECTORY}/src/${subproject})
@@ -71,9 +70,9 @@ foreach(SubProject ${CTEST_PROJECT_SUBPROJECTS})
 endforeach()
 
 
-################################################################################
-# Prepare for tests                                                            #
-################################################################################
+#==================================================================================================#
+# Prepare for tests                                                                                #
+#==================================================================================================#
 set(RunAll ON)
 if(DashboardModel STREQUAL "Experimental")
 elseif(DashboardModel STREQUAL "Continuous")
@@ -89,12 +88,11 @@ elseif(DashboardModel STREQUAL "Weekly")
   message("Checking out super project to 'next'")
   checkout_to_branch(${CTEST_SOURCE_DIRECTORY} next)
 endif()
-message("================================================================================")
 
 
-################################################################################
-# Build project & run tests if needed                                          #
-################################################################################
+#==================================================================================================#
+# Build project & run tests if needed                                                              #
+#==================================================================================================#
 while(${CTEST_ELAPSED_TIME} LESS 72000)
   set(StartTime ${CTEST_ELAPSED_TIME})
   ctest_start(${DashboardModel} TRACK ${DashboardModel})

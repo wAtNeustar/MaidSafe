@@ -3,53 +3,74 @@
   </SubProject>
   <SubProject name="Private">
     <Dependency name="Common"/>
-  </SubProject>
-  <SubProject name="Rudp">
-    <Dependency name="Common"/>
-  </SubProject>
-  <SubProject name="Routing">
-    <Dependency name="Common"/>
-    <Dependency name="Private"/>
-    <Dependency name="Common"/>
+    <Dependency name="Passport"/>
   </SubProject>
   <SubProject name="Passport">
     <Dependency name="Common"/>
     <Dependency name="Private"/>
   </SubProject>
+  <SubProject name="Rudp">
+    <Dependency name="Common"/>
+    <Dependency name="Private"/>
+    <Dependency name="Passport"/>
+  </SubProject>
+  <SubProject name="Routing">
+    <Dependency name="Common"/>
+    <Dependency name="Private"/>
+    <Dependency name="Passport"/>
+    <Dependency name="Rudp"/>
+  </SubProject>
+  <SubProject name="Nfs">
+    <Dependency name="Common"/>
+    <Dependency name="Private"/>
+    <Dependency name="Passport"/>
+    <Dependency name="Rudp"/>
+    <Dependency name="Routing"/>
+  </SubProject>
   <SubProject name="Encrypt">
     <Dependency name="Common"/>
     <Dependency name="Private"/>
+    <Dependency name="Passport"/>
+    <Dependency name="Rudp"/>
+    <Dependency name="Routing"/>
+    <Dependency name="Nfs"/>
   </SubProject>
   <SubProject name="Drive">
     <Dependency name="Common"/>
     <Dependency name="Private"/>
+    <Dependency name="Passport"/>
+    <Dependency name="Rudp"/>
+    <Dependency name="Routing"/>
+    <Dependency name="Nfs"/>
     <Dependency name="Encrypt"/>
   </SubProject>
   <SubProject name="Vault">
     <Dependency name="Common"/>
     <Dependency name="Private"/>
+    <Dependency name="Passport"/>
     <Dependency name="Rudp"/>
     <Dependency name="Routing"/>
+    <Dependency name="Nfs"/>
   </SubProject>
   <SubProject name="Lifestuff">
     <Dependency name="Common"/>
     <Dependency name="Private"/>
+    <Dependency name="Passport"/>
     <Dependency name="Rudp"/>
     <Dependency name="Routing"/>
-    <Dependency name="Passport"/>
+    <Dependency name="Nfs"/>
     <Dependency name="Encrypt"/>
     <Dependency name="Drive"/>
-    <Dependency name="Vault"/>
   </SubProject>
-  <SubProject name="LifestuffGui">
+  <SubProject name="LifestuffUiQt">
     <Dependency name="Common"/>
     <Dependency name="Private"/>
+    <Dependency name="Passport"/>
     <Dependency name="Rudp"/>
     <Dependency name="Routing"/>
-    <Dependency name="Passport"/>
+    <Dependency name="Nfs"/>
     <Dependency name="Encrypt"/>
     <Dependency name="Drive"/>
-    <Dependency name="Vault"/>
     <Dependency name="Lifestuff"/>
   </SubProject>
 </Project>

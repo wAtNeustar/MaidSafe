@@ -1,9 +1,6 @@
 [submodule "src/common"]
 	path = src/common
 	url = git@github.com:maidsafe/MaidSafe-Common
-[submodule "src/docs"]
-	path = src/docs
-	url = git@github.com:maidsafe/MaidSafe-Documents
 [submodule "src/drive"]
 	path = src/drive
 	url = git@github.com:maidsafe/MaidSafe-Drive
@@ -13,15 +10,9 @@
 [submodule "src/lifestuff"]
 	path = src/lifestuff
 	url = git@github.com:maidsafe/LifeStuff
-[submodule "src/lifestuff-gui"]
-	path = src/lifestuff-gui
-	url = git@github.com:maidsafe/LifeStuff-GUI
 [submodule "src/passport"]
 	path = src/passport
 	url = git@github.com:maidsafe/MaidSafe-Passport
-[submodule "src/pd"]
-	path = src/pd
-	url = git@github.com:maidsafe/MaidSafe-PD
 [submodule "src/private"]
 	path = src/private
 	url = git@github.com:maidsafe/MaidSafe-Private
@@ -31,3 +22,9 @@
 [submodule "src/rudp"]
 	path = src/rudp
 	url = git@github.com:maidsafe/MaidSafe-RUDP
+[submodule "src/nfs"]
+	path = src/nfs
+	url = git@github.com:maidsafe/MaidSafe-Network-Filesystem
+[submodule "src/vault"]
+	path = src/vault
+	url = git@github.com:maidsafe/MaidSafe-Vault

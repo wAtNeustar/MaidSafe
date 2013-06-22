@@ -3,9 +3,9 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 project(Protobuf)
 
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 
-include(../../../cmake_modules/maidsafe_standard_flags.cmake)
+include(../../../cmake_modules/standard_flags.cmake)
 
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX- /W0")
@@ -36,13 +36,18 @@ add_library(protobuf ${PROTOBUF_DIR})
 add_executable(protoc ${PROTOC_DIR})
 set_target_properties(protobuf protoc PROPERTIES FOLDER "Third Party/Google Protocol Buffers")
 
-
-if(UNIX)
-  target_link_libraries(protoc -lpthread)
+if(MSVC)
+  set_target_properties(protobuf PROPERTIES
+                        STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
+                        STATIC_LIBRARY_FLAGS_RELWITHDEBINFO "/LTCG")
+  set_target_properties(protoc PROPERTIES
+                        LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG"
+                        LINK_FLAGS_RELWITHDEBINFO "/OPT:REF /OPT:ICF /LTCG /DEBUG"
+                        LINK_FLAGS_MINSIZEREL "/LTCG")
 endif()
 
+target_link_libraries(protobuf ${JustThread_LIBRARIES})
 target_link_libraries(protoc protobuf)
-
-if(JustThread_FOUND)
-  target_link_libraries(protobuf optimized ${JustThread_LIBRARY} debug ${JustThread_LIBRARY_DEBUG})
+if(UNIX)
+  target_link_libraries(protoc -lpthread)
 endif()

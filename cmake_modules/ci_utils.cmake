@@ -1,17 +1,19 @@
-#==============================================================================#
-#                                                                              #
-#  Copyright (c) 2012 MaidSafe.net limited                                     #
-#                                                                              #
-#  The following source code is property of MaidSafe.net limited and is not    #
-#  meant for external use.  The use of this code is governed by the license    #
-#  file licence.txt found in the root directory of this project and also on    #
-#  www.maidsafe.net.                                                           #
-#                                                                              #
-#  You are not free to copy, amend or otherwise use this source code without   #
-#  the explicit written permission of the board of directors of MaidSafe.net.  #
-#                                                                              #
-#  Script Purpose: Run CI on All Submodules of MaidSafe/MaidSafe               #
-#==============================================================================#
+#==================================================================================================#
+#                                                                                                  #
+#  Copyright (c) 2012 MaidSafe.net limited                                                         #
+#                                                                                                  #
+#  The following source code is property of MaidSafe.net limited and is not meant for external     #
+#  use.  The use of this code is governed by the license file licence.txt found in the root        #
+#  directory of this project and also on www.maidsafe.net.                                         #
+#                                                                                                  #
+#  You are not free to copy, amend or otherwise use this source code without the explicit written  #
+#  permission of the board of directors of MaidSafe.net.                                           #
+#                                                                                                  #
+#==================================================================================================#
+#                                                                                                  #
+#  Helper module used in running CI on all submodules of MaidSafe/MaidSafe                         #
+#                                                                                                  #
+#==================================================================================================#
 
 
 function(checkout_to_branch SourceDir Branch)
@@ -141,7 +143,7 @@ function(handle_failed_build)
   message("${SubProject} failed during build, exiting script")
   if(WIN32)
     # TODO(Viv) Check OS Version
-    execute_process(COMMAND cmd /c "ci_build_reporter.py win7 ${MachineBuildType} fail ${SubProject} ${${SubProject}NewCommitLogAuthor}"
+    execute_process(COMMAND cmd /c "ci_build_reporter.py win8 ${MachineBuildType} fail ${SubProject} ${${SubProject}NewCommitLogAuthor}"
                     WORKING_DIRECTORY "${CTEST_SOURCE_DIRECTORY}/tools"
                     RESULT_VARIABLE ResultVar
                     OUTPUT_VARIABLE OutputVar)
@@ -152,8 +154,8 @@ endfunction()
 
 
 function(build_and_run SubProject RunAll)
-  # if(NOT ${SubProject} STREQUAL "Vault")
-  #   message("Temporarily skipping ${SubProject}")
+  # if(NOT ${SubProject} STREQUAL "Lifestuff")
+  #   message("Temporary skip of All${SubProject}")
   #   return()
   # endif()
   if(NOT ${SubProject}ShouldRun AND NOT RunAll)
@@ -161,24 +163,45 @@ function(build_and_run SubProject RunAll)
     return()
   endif()
 
-
   message("Building ${SubProject}")
-  if(NOT ${SubProject} STREQUAL "Vault")
-    set(CTEST_BUILD_TARGET "All${SubProject}")
-  else()
-    set(CTEST_BUILD_TARGET "AllPd")
-  endif()
+  set(CTEST_BUILD_TARGET "All${SubProject}")
   # add coverage flags
-  if(DashboardModel STREQUAL "Experimental")
+  if(DashboardModel STREQUAL "Experimental" AND NOT WIN32)
     set(ExtraConfigureArgs "${ExtraConfigureArgs};-DCOVERAGE=ON")
   endif()
   ctest_configure(OPTIONS "${ExtraConfigureArgs}")
   ctest_read_custom_files(${CMAKE_CURRENT_BINARY_DIR})
   ctest_build(RETURN_VALUE BuildResult)
 
+  # teardown network with python script if it's Lifestuff
+  #if(${SubProject} STREQUAL "Lifestuff")
+  #  execute_process(COMMAND ${CTEST_SOURCE_DIRECTORY}/tools/lifestuff_killer.py
+  #                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
+  #endif()
+
+  # set up network with python script if it's Lifestuff
+  if(${SubProject} STREQUAL "Lifestuff")
+    #message("--------------------------------------------: python ${CTEST_SOURCE_DIRECTORY}/tools/py_function.py")
+    #execute_process(COMMAND python ${CTEST_SOURCE_DIRECTORY}/tools/py_function.py
+    #                WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
+    #                #RESULT_VARIABLE SetupResult)
+    #                #OUTPUT_VARIABLE SetupOutput)
+    #message("++++++++++++++++++++++++++++++++++++++++++++: ${SetupOutput}")
+    #if(SetupResult EQUAL 0)
+    #  message(FATAL_ERROR "Error running set up")
+    #endif()
+  endif()
+
   # runs only tests that have a LABELS property matching "${SubProject}"
   message("Testing ${SubProject}")
   ctest_test(INCLUDE_LABEL "${SubProject}")
+
+  # teardown network with python script if it's Lifestuff
+  if(${SubProject} STREQUAL "Lifestuff")
+    execute_process(COMMAND ${CTEST_SOURCE_DIRECTORY}/tools/lifestuff_killer.py
+                    RESULT_VARIABLE TEARDOWN_RESULT
+                    WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
+  endif()
 
   fix_xml_files_platform_entries_for_x64()
   write_git_update_details_to_file()
@@ -200,10 +223,10 @@ function(build_and_run SubProject RunAll)
     handle_failed_build()
     set(BuildFailed TRUE PARENT_SCOPE)
     break()
-  elseif(${SubProject} STREQUAL "LifestuffGui")
+  elseif(${SubProject} STREQUAL "LifestuffUiQt")
     if(WIN32)
       # TODO(Viv) Check OS Version
-      execute_process(COMMAND cmd /c "ci_build_reporter.py win7 ${MachineBuildType} ok ${SubProject} ${${SubProject}NewCommitLogAuthor}"
+      execute_process(COMMAND cmd /c "ci_build_reporter.py win8 ${MachineBuildType} ok ${SubProject} ${${SubProject}NewCommitLogAuthor}"
                       WORKING_DIRECTORY "${CTEST_SOURCE_DIRECTORY}/tools"
                       RESULT_VARIABLE ResultVar
                       OUTPUT_VARIABLE OutputVar)

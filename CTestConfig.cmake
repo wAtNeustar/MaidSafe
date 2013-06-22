@@ -9,13 +9,14 @@ if(CMAKE_CL_64)
 endif()
 set(CTEST_PROJECT_SUBPROJECTS
     Common
-    Rudp
     Private
-    Routing
     Passport
+    Rudp
+    Routing
+    Nfs
     Encrypt
     Drive
     Vault
     Lifestuff
-    LifestuffGui
+    LifestuffUiQt
     )

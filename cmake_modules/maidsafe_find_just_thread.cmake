@@ -1,56 +1,46 @@
-#==============================================================================#
-#                                                                              #
-#  Copyright (c) 2012 MaidSafe.net limited                                     #
-#                                                                              #
-#  The following source code is property of MaidSafe.net limited and is not    #
-#  meant for external use.  The use of this code is governed by the license    #
-#  file licence.txt found in the root directory of this project and also on    #
-#  www.maidsafe.net.                                                           #
-#                                                                              #
-#  You are not free to copy, amend or otherwise use this source code without   #
-#  the explicit written permission of the board of directors of MaidSafe.net.  #
-#                                                                              #
-#==============================================================================#
-#                                                                              #
-#  Module used to locate the just::thread include directories and libraries.   #
-#                                                                              #
-#  To enable checked libraries, set the following variable to ON:              #
-#    JUST_THREAD_DEADLOCK_CHECK                                                #
-#                                                                              #
-#  Variables set and cached by this module are:                                #
-#    JustThread_INCLUDE_DIR, JustThread_LIBRARY_DIR, JustThread_LIBRARY,       #
-#    JustThread_LIBRARY_DEBUG, and JustThread_FOUND.                           #
-#                                                                              #
-#==============================================================================#
+#==================================================================================================#
+#                                                                                                  #
+#  Copyright (c) 2012 MaidSafe.net limited                                                         #
+#                                                                                                  #
+#  The following source code is property of MaidSafe.net limited and is not meant for external     #
+#  use.  The use of this code is governed by the license file licence.txt found in the root        #
+#  directory of this project and also on www.maidsafe.net.                                         #
+#                                                                                                  #
+#  You are not free to copy, amend or otherwise use this source code without the explicit written  #
+#  permission of the board of directors of MaidSafe.net.                                           #
+#                                                                                                  #
+#==================================================================================================#
+#                                                                                                  #
+#  Module used to locate the just::thread include directories and libraries.                       #
+#                                                                                                  #
+#  To enable checked libraries, set the following variable to ON:                                  #
+#    JUST_THREAD_DEADLOCK_CHECK                                                                    #
+#                                                                                                  #
+#  Variables set and cached by this module are:                                                    #
+#    JustThread_INCLUDE_DIR, JustThread_LIBRARY_DIR, JustThread_LIBRARY,                           #
+#    JustThread_LIBRARY_DEBUG, JustThread_LIBRARIES, and JustThread_FOUND.                         #
+#                                                                                                  #
+#==================================================================================================#
 
 
 unset(JustThread_INCLUDE_DIR CACHE)
 unset(JustThread_LIBRARY_DIR CACHE)
 unset(JustThread_LIBRARY CACHE)
 unset(JustThread_LIBRARY_DEBUG CACHE)
+unset(JustThread_LIBRARIES CACHE)
 unset(JustThread_FOUND CACHE)
 
-if(NO_JUST_THREADS)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  set(USE_JUST_THREADS FALSE)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.7")
+  set(USE_JUST_THREADS FALSE)
+endif()
+
+if(NOT USE_JUST_THREADS AND NOT JUST_THREAD_ROOT_DIR)
+  unset(JustThread_LIBRARIES)
   return()
 endif()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(GCC_VERSION VERSION_LESS 4.8)
-    message ("gcc ${GCC_VERSION} is supported, using just threads.")
-  else()
-    message(STATUS "Won't use just::thread in conjunction with this compiler: gcc ${GCC_VERSION}")
-    set(NO_JUST_THREADS = 1)
-    return()
-  endif()
-endif()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(NO_JUST_THREADS = 1)
-message(STATUS "Won't use just::thread in conjunction with Clang compiler.")
-return()
-endif()
-
+message("${HR}")
 
 if(JUST_THREAD_ROOT_DIR)
   set(JUST_THREAD_ROOT_DIR ${JUST_THREAD_ROOT_DIR} CACHE PATH "Path to just::thread root directory" FORCE)
@@ -130,7 +120,9 @@ else()
   set(INCLUDE_DIRS ${INCLUDE_DIRS} ${JustThread_INCLUDE_DIR})
 endif()
 
+set(JustThread_LIBRARIES optimized ${JustThread_LIBRARY} debug ${JustThread_LIBRARY_DEBUG})
 if(UNIX AND NOT APPLE)
+  set(JustThread_LIBRARIES ${JustThread_LIBRARIES} rt pthread)
   set(JustThread_LIBRARY ${JustThread_LIBRARY} rt pthread)
   set(JustThread_LIBRARY_DEBUG ${JustThread_LIBRARY_DEBUG} rt pthread)
 endif()
