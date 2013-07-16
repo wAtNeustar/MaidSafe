@@ -68,6 +68,8 @@
   Var ChunkString
   Var ChunkBrowse
   Var TempString
+  Var ChunkLabel
+  Var ChunkLabelText
 
   Var un.REMOVE_ALL_USERS
   Var un.REMOVE_CURRENT_USER
@@ -84,8 +86,8 @@
   !define MUI_HEADERIMAGE
   !define MUI_HEADERIMAGE_LEFT
   @CPACK_NSIS_EXTRA_INSTALL_COMMANDS@
-  !define MUI_WELCOMEPAGE_TITLE "Welcome to the Cloud Encryptor ${VERSION} Setup Wizard"
-  !define MUI_WELCOMEPAGE_TEXT "Cloud Encryptor... install now..."
+  !define MUI_WELCOMEPAGE_TITLE "Welcome to the MaidSafe Cloud Encryptor ${VERSION} Setup Wizard"
+  !define MUI_WELCOMEPAGE_TEXT "Cloud Encryptor mounts a virtual drive that encrypts your data to any location you choose, be it to a network, shared directory or your local drive. $\r$\n$\r$\nClick Next to install Cloud Encryptor..."
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_LICENSE "@CPACK_RESOURCE_FILE_LICENSE@"
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW PreInstallPage
@@ -474,10 +476,14 @@ Function PageSetupChunkStore
     Abort
   ${EndIf}
 
-  ${NSD_CreateGroupBox} 0u 60u 100% 34u "Set storage location."
-  ${NSD_CreateText} 3% 75u 72% 13u $ChunkString
+  StrCpy $ChunkLabelText "Cloud Encryptor will store the data on your virtual drive to the following location."
+  ${NSD_CreateLabel} 0u 42u 94% 26u $ChunkLabelText
+  Pop $ChunkLabel
+
+  ${NSD_CreateGroupBox} 0u 68u 100% 34u "Select storage location."
+  ${NSD_CreateText} 3% 83u 72% 13u $ChunkString
   Pop $ChunkText
-  ${NSD_CreateBrowseButton} 78% 73u 19% 15u "Browse..."
+  ${NSD_CreateBrowseButton} 78% 81u 19% 15u "Browse..."
   Pop $ChunkBrowse
   ${NSD_OnClick} $ChunkBrowse ChunkBrowseButtonClicked
   ${NSD_OnChange} $ChunkText ChunkTextChanged
