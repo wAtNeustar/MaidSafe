@@ -30,13 +30,14 @@ set(SubModules
       common
       private
       passport
-      rudp
-      routing
+      #rudp
+      #routing
       encrypt
-      nfs
-      vault
+      #nfs
+      #vault
       drive
-      lifestuff)
+      #lifestuff
+      )
 # Set all submodules' source dir before calling add_subdirectory to avoid
 # having to run CMake twice in a clean build tree.
 foreach(SubModule ${SubModules})

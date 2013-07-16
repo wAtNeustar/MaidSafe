@@ -19,7 +19,7 @@
 
 
 set(ApplicationVersionMajor 0)
-set(ApplicationVersionMinor 7)
+set(ApplicationVersionMinor 8)
 set(ApplicationVersionPatch 000)
 
 # Testing environment if ApplicationVersionMinor is odd
