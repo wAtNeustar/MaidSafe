@@ -5,7 +5,7 @@ NoException><MaidManager><Verbose><MaidManager decrease count to
 HasException><MaidManager><Verbose><MaidManager increase count to
 NoException><MaidManager><Error><MaidManager blocked DeleteRequest of chunk
 NoException><MaidManager><Info><MaidManager transfer account
-NoException><MaidManager><Info><MaidManager HandleAccountTransfer
+NoException><MaidManager><Info><MaidManager got account
 NoException><DataManager><Verbose><DataManager decrease subscribers to
 HasException><DataManager><Verbose><DataManager increase subscribers to
 NoException><DataManager><Info><DataManager re-put chunk
@@ -14,5 +14,7 @@ NoException><DataManager><Info><DataManager got account
 NoException><DataManager><Verbose><DataManager transfer account
 NoException><PmidManager><Warning><PmidManager dropping pmid_node
 NoException><PmidManager><Info><PmidManager joining pmid_node
+NoException><PmidManager><Info><PmidManager got account
+NoException><PmidManager><Verbose><PmidManager transfer account
 HasException><PmidNode><Info><PmidNode storing chunk
 NoException><PmidNode><Warning><PmidNode deleting chunk
