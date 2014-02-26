@@ -35,8 +35,6 @@ import multiprocessing
 
 # MaidSafe imports
 import lifestuff_killer
-import routing
-import vault
 
 
 all = { 'Common' : 'common', 'Rudp' : 'rudp', 'Routing' : 'routing',
